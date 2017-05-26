@@ -1,0 +1,22 @@
+/*Please add ; after each select statement*/
+CREATE PROCEDURE battleshipGameResults()
+BEGIN
+
+    SELECT ship_sizes.size as size,
+    SUM(CASE WHEN hits = 0 THEN 1 ELSE 0 END) as undamaged,
+    SUM(CASE WHEN hits > 0 AND hits < size THEN 1 ELSE 0 END) as partly_damaged,
+    SUM(CASE WHEN hits = size THEN 1 ELSE 0 END) as sunk
+    FROM (
+        SELECT ships.*, (1 + bottom_right_y - upper_left_y + bottom_right_x - upper_left_x) as size
+        FROM locations_of_ships as ships
+    ) ship_sizes
+    LEFT JOIN (
+        SELECT ships.id as id, COUNT(shots.id) hits FROM locations_of_ships as ships
+        LEFT JOIN opponents_shots as shots
+        ON shots.target_x BETWEEN ships.upper_left_x AND ships.bottom_right_x
+        AND shots.target_y BETWEEN ships.upper_left_y AND ships.bottom_right_y
+        GROUP BY ships.id
+    ) hits
+    ON ship_sizes.id = hits.id
+    GROUP BY size;
+END
